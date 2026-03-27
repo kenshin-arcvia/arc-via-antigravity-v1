@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Cache Busting to ensure new premium styles load -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212">
+    <title>ARC VIA Antigravity V1 - Premium Calendar</title>
+    <!-- Use timestamp for pure cache bust -->
+    <script>
+        document.write('<link rel="stylesheet" href="styles.css?v=' + Date.now() + '">');
+    </script>
+</head>
+
+<body class="theme-transitioning">
+    <div class="app">
+        <header>
+            <div class="logo">ARC VIA <span>Antigravity V1</span></div>
+            <div class="hdr-right">
+                <span class="voice-result" id="voiceResult"></span>
+                <button class="voice-btn" id="voiceBtn" title="音声入力">🎤</button>
+                <button class="theme-toggle-btn" id="themeToggle" title="テーマ切り替え">🌙</button>
+                <div class="sync-status" id="gcalSyncBtn" title="Google カレンダーと同期">
+                    <div class="sync-dot"></div>
+                    <span id="syncLabel">同期オフ</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main">
+            <div class="cal-area">
+                <div class="week-nav">
+                    <button onclick="shiftWeek(-1)">◀ 先週</button>
+                    <span class="week-label" id="weekLabel"></span>
+                    <button onclick="shiftWeek(1)">来週 ▶</button>
+                    <button onclick="goToday()">今日</button>
+                </div>
+                <div class="cal-wrap" id="calWrap">
+                    <div class="cal-grid" id="calGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAPTURE EVENTS FOR DRAG/PANEL OVERLAYS -->
+    <div class="panel-overlay" id="panelOverlay" onclick="overlayClick(event)">
+        <div class="panel">
+            <div class="breadcrumb" id="breadcrumb"></div>
+            <div class="panel-header">
+                <button id="btnBack" onclick="panelBack()" style="display:none;">← 戻る</button>
+                <h2 id="panelTitle"></h2>
+                <button onclick="closePanel()" title="閉じる">✕</button>
+            </div>
+            <div class="panel-body" id="panelBody"></div>
+        </div>
+    </div>
+
+    <!-- ADD BLOCK MODAL -->
+    <div class="modal-overlay" id="modalBlock" onclick="overlayModal(event,'modalBlock')">
+        <div class="modal">
+            <h3>新しい予定ブロック</h3>
+            <div class="form-row">
+                <div class="form-label">名前</div><input id="bName" placeholder="例：薬局業務">
+            </div>
+            <div class="form-row" style="display:flex;gap:12px">
+                <div style="flex:1">
+                    <div class="form-label">開始 (時)</div><input type="number" id="bStart" min="0" max="23">
+                </div>
+                <div style="flex:1">
+                    <div class="form-label">終了 (時)</div><input type="number" id="bEnd" min="1" max="24">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">繰り返し</div>
+                <select id="bRecType" onchange="onRecTypeChange()">
+                    <option value="none">繰り返しなし</option>
+                    <option value="daily">毎日</option>
+                    <option value="weekly">毎週（曜日指定）</option>
+                    <option value="biweekly">隔週</option>
+                    <option value="monthly">毎月</option>
+                </select>
+            </div>
+            <div class="form-row" id="bRecDaysRow" style="display:none">
+                <div class="form-label">繰り返す曜日</div>
+                <div class="days-grid" id="bRecDays">
+                    <div class="day-toggle" data-d="0">月</div>
+                    <div class="day-toggle" data-d="1">火</div>
+                    <div class="day-toggle" data-d="2">水</div>
+                    <div class="day-toggle" data-d="3">木</div>
+                    <div class="day-toggle" data-d="4">金</div>
+                    <div class="day-toggle" data-d="5">土</div>
+                    <div class="day-toggle" data-d="6">日</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">カラー</div>
+                <div class="color-picker" id="blockColorPicker"></div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeModal('modalBlock')">キャンセル</button>
+                <button class="primary" onclick="saveBlock()">作成する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD TASKLIST MODAL WITH TEMPLATE PICKER -->
+    <div class="modal-overlay" id="modalTL" onclick="overlayModal(event,'modalTL')">
+        <div class="modal">
+            <h3>タスクリストを追加</h3>
+            <div class="form-row">
+                <div class="form-label">テンプレートから選ぶ (任意)</div>
+                <div class="template-select" id="tlTemplates">
+                    <!-- Javascript will inject list here -->
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">タスクリスト名</div><input id="tlName" placeholder="新しいタスクリスト名">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeModal('modalTL')">キャンセル</button>
+                <button class="primary" onclick="saveTL()">追加する</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalTask" onclick="overlayModal(event,'modalTask')">
+        <div class="modal">
+            <h3>タスクを追加</h3>
+            <div class="form-row">
+                <div class="form-label">名前</div><input id="taskName" placeholder="タスク名を入力">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeModal('modalTask')">キャンセル</button>
+                <button class="primary" onclick="saveTask()">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalST" onclick="overlayModal(event,'modalST')">
+        <div class="modal">
+            <h3>サブタスクを追加</h3>
+            <div class="form-row">
+                <div class="form-label">名前</div><input id="stName" placeholder="サブタスク名を入力">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeModal('modalST')">キャンセル</button>
+                <button class="primary" onclick="saveST()">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Load scripts with cache bust -->
+    <script>
+        document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');
+    </script>
+</body>
+
+</html>
