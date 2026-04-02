@@ -13,10 +13,10 @@ function initTheme() {
     // Default to light if no preference is saved, otherwise use saved or system preference
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
         document.body.setAttribute('data-theme', 'dark');
-        document.getElementById('themeIcon').textContent = '☀️';
+        document.getElementById('themeToggle').textContent = '☀️';
     } else {
         document.body.removeAttribute('data-theme');
-        document.getElementById('themeIcon').textContent = '🌙';
+        document.getElementById('themeToggle').textContent = '🌙';
     }
 }
 
@@ -27,11 +27,11 @@ function toggleTheme() {
     if (document.body.getAttribute('data-theme') === 'dark') {
         document.body.removeAttribute('data-theme');
         localStorage.setItem('arc-theme', 'light');
-        document.getElementById('themeIcon').textContent = '🌙';
+        document.getElementById('themeToggle').textContent = '🌙';
     } else {
         document.body.setAttribute('data-theme', 'dark');
         localStorage.setItem('arc-theme', 'dark');
-        document.getElementById('themeIcon').textContent = '☀️';
+        document.getElementById('themeToggle').textContent = '☀️';
     }
 
     // Remove class after transition completes
